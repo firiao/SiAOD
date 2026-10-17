@@ -21,6 +21,7 @@
 
     python lab01-complexity-starter.py --variant N --data ~/data-structures-and-algorithms/data/generated
 """
+
 from __future__ import annotations
 
 import argparse
@@ -51,8 +52,8 @@ EXPONENTS = (10**3, 10**4, 10**5, 10**6, 10**7)
 POW_MOD = 1_000_000_007
 POW_BASE = 3
 
-REPEATS = 5           # повторов на точку (берётся медиана)
-POW_CALLS = 20_000    # вызовов binary_pow на один замер: иначе время неизмеримо мало
+REPEATS = 5  # повторов на точку (берётся медиана)
+POW_CALLS = 20_000  # вызовов binary_pow на один замер: иначе время неизмеримо мало
 
 # ---------------------------------------------------------------------------
 # 1. Алгоритмы (реализуются вручную, без sum/max и встроенного pow)
@@ -60,31 +61,55 @@ POW_CALLS = 20_000    # вызовов binary_pow на один замер: ин
 
 
 def array_sum(a: list[int]) -> int:
-    """Сумма элементов массива. Ожидаемая сложность: TODO (обосновать в отчёте)."""
-    # TODO: реализовать циклом
-    raise NotImplementedError
+    """Сумма элементов массива. Ожидаемая сложность: O(N) (обосновать в отчёте)."""
+    total_sum = 0
+    for i in a:
+        total_sum += i
+
+    return total_sum
 
 
 def array_max(a: list[int]) -> int:
-    """Максимум массива (массив непуст). Ожидаемая сложность: TODO."""
-    # TODO: реализовать циклом
-    raise NotImplementedError
+    """Максимум массива (массив непуст). Ожидаемая сложность: O(N)."""
+    max_val = a[0]
+
+    for i in range(1, len(a)):
+        if a[i] > max_val:
+            max_val = a[i]
+
+    return max_val
 
 
 def count_equal_pairs(a: list[int]) -> int:
-    """Число пар (i, j), i < j, таких что a[i] == a[j]. Ожидаемая сложность: TODO."""
-    # TODO: реализовать двойным циклом
-    raise NotImplementedError
+    """Число пар (i, j), i < j, таких что a[i] == a[j]. Ожидаемая сложность: O(N**2)."""
+    pairs_counter = 0
+    for i in range(0, len(a) - 1):
+        for j in range(i + 1, len(a)):
+            if a[i] == a[j]:
+                pairs_counter += 1
+    return pairs_counter
 
 
 def binary_pow(x: int, n: int, mod: int | None = None) -> int:
-    """Бинарное возведение в степень, n >= 0. Ожидаемая сложность: TODO.
+    """Бинарное возведение в степень, n >= 0. Ожидаемая сложность: O(log(N)).
 
     При заданном mod все умножения выполняются по модулю (результат x**n % mod).
     """
-    # TODO: реализовать через квадрирование; при mod применять % mod после
-    # каждого умножения
-    raise NotImplementedError
+    result = 1
+
+    while n > 0:
+        if n % 2 == 1:
+            result = result * x
+            if mod is not None:
+                result = result % mod
+
+        x = x * x
+        if mod is not None:
+            x = x % mod
+
+        n = n // 2
+
+    return result
 
 
 # ---------------------------------------------------------------------------
@@ -109,15 +134,18 @@ def find_data_dir(explicit: Path | None) -> Path:
         "Не найден каталог data/generated с данными варианта.\n"
         "Сгенерируйте данные из корня репозитория курса:\n"
         "    python scripts/generate_data.py --variant N --only arrays\n"
-        "или укажите каталог явно: --data <путь>")
+        "или укажите каталог явно: --data <путь>"
+    )
 
 
 def check_variant(data_dir: Path, variant: int) -> None:
     """Сверить номер варианта с паспортом данных (manifest.json)."""
     manifest_path = data_dir / "manifest.json"
     if not manifest_path.is_file():
-        print(f"ВНИМАНИЕ: в {data_dir} нет manifest.json — "
-              f"не могу проверить, что данные относятся к варианту {variant}.")
+        print(
+            f"ВНИМАНИЕ: в {data_dir} нет manifest.json — "
+            f"не могу проверить, что данные относятся к варианту {variant}."
+        )
         return
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     actual = manifest.get("variant")
@@ -126,18 +154,22 @@ def check_variant(data_dir: Path, variant: int) -> None:
             f"Данные в {data_dir} сгенерированы для варианта {actual}, "
             f"а работа запущена с --variant {variant}.\n"
             f"Перегенерируйте данные: "
-            f"python scripts/generate_data.py --variant {variant} --only arrays")
+            f"python scripts/generate_data.py --variant {variant} --only arrays"
+        )
     print(f"Данные варианта {variant} (seed={manifest.get('seed')}) из {data_dir}")
 
 
-def load_array(data_dir: Path, kind: str, n: int, limit: int | None = None) -> list[int]:
+def load_array(
+    data_dir: Path, kind: str, n: int, limit: int | None = None
+) -> list[int]:
     """Загрузить массив arrays_<kind>_<n>.txt; limit — взять только первые limit чисел."""
     path = data_dir / f"arrays_{kind}_{n}.txt"
     if not path.is_file():
         raise SystemExit(
             f"Не найден файл данных: {path}\n"
             f"Сгенерируйте его: python scripts/generate_data.py "
-            f"--variant <ваш вариант> --only arrays")
+            f"--variant <ваш вариант> --only arrays"
+        )
     values = [int(line) for line in path.read_text(encoding="utf-8").split()]
     return values[:limit] if limit is not None else values
 
@@ -154,7 +186,7 @@ def self_check() -> None:
     assert array_sum([7]) == 7
     assert array_max([3, 1, 2]) == 3
     assert count_equal_pairs([]) == 0
-    assert count_equal_pairs([5, 5, 5]) == 3          # пары (0,1), (0,2), (1,2)
+    assert count_equal_pairs([5, 5, 5]) == 3  # пары (0,1), (0,2), (1,2)
     assert binary_pow(2, 0) == 1
     assert binary_pow(2, 10) == 1024
     assert binary_pow(2, 10, mod=1000) == 24
@@ -171,6 +203,9 @@ def self_check() -> None:
 
     # TODO: добавить собственные проверки инвариантов и описать их в отчёте
     # (например: count_equal_pairs на массиве из попарно различных элементов = 0).
+    assert count_equal_pairs([1, 2, 3, 4, 5]) == 0
+    assert count_equal_pairs([1, 1, 1, 1]) == 6
+
     print("self_check: OK")
 
 
@@ -195,8 +230,9 @@ def log_log_slope(points: list[tuple[int, float]]) -> float:
     xs = [math.log10(n) for n, _ in points]
     ys = [math.log10(t) for _, t in points]
     mx, my = sum(xs) / len(xs), sum(ys) / len(ys)
-    return (sum((x - mx) * (y - my) for x, y in zip(xs, ys))
-            / sum((x - mx) ** 2 for x in xs))
+    return sum((x - mx) * (y - my) for x, y in zip(xs, ys)) / sum(
+        (x - mx) ** 2 for x in xs
+    )
 
 
 def run_benchmarks(data_dir: Path) -> dict[str, list[tuple[int, float]]]:
@@ -231,9 +267,11 @@ def run_benchmarks(data_dir: Path) -> dict[str, list[tuple[int, float]]]:
     print(f"\nbinary_pow (по {POW_CALLS} вызовов на точку, по модулю {POW_MOD}):")
     points = []
     for e in EXPONENTS:
+
         def batch(e: int = e) -> None:
             for _ in range(POW_CALLS):
                 binary_pow(POW_BASE, e, mod=POW_MOD)
+
         t = bench(batch) / POW_CALLS
         points.append((e, t))
         print(f"  n={e:>9}  log2(n)={math.log2(e):5.1f}  t={t:.9f} c")
@@ -251,11 +289,14 @@ def plot_results(results: dict[str, list[tuple[int, float]]], out_dir: Path) -> 
     """Два графика: log-log для степенных алгоритмов и t(log n) для бинарной степени."""
     try:
         import matplotlib
+
         matplotlib.use("Agg")  # сохранение в файл без графической оболочки
         import matplotlib.pyplot as plt
     except ImportError:
-        print("\nmatplotlib не установлен — графики пропущены "
-              "(pip install -r requirements.txt)")
+        print(
+            "\nmatplotlib не установлен — графики пропущены "
+            "(pip install -r requirements.txt)"
+        )
         return
 
     power_law = ("array_sum", "array_max", "count_equal_pairs")
@@ -264,7 +305,9 @@ def plot_results(results: dict[str, list[tuple[int, float]]], out_dir: Path) -> 
         points = results[name]
         ns = [n for n, _ in points]
         ts = [t for _, t in points]
-        ax.plot(ns, ts, marker="o", label=f"{name} (наклон ≈ {log_log_slope(points):.2f})")
+        ax.plot(
+            ns, ts, marker="o", label=f"{name} (наклон ≈ {log_log_slope(points):.2f})"
+        )
     ax.set_xscale("log")
     ax.set_yscale("log")
     ax.set_xlabel("размер входа n")
@@ -297,13 +340,22 @@ def plot_results(results: dict[str, list[tuple[int, float]]], out_dir: Path) -> 
 
 
 def main() -> None:
-    ap = argparse.ArgumentParser(description=__doc__,
-                                 formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     ap.add_argument("--variant", type=int, required=True, help="номер варианта")
-    ap.add_argument("--data", type=Path, default=None,
-                    help="каталог с данными варианта (по умолчанию ищется data/generated)")
-    ap.add_argument("--out", type=Path, default=Path.cwd(),
-                    help="каталог для графиков (по умолчанию текущий)")
+    ap.add_argument(
+        "--data",
+        type=Path,
+        default=None,
+        help="каталог с данными варианта (по умолчанию ищется data/generated)",
+    )
+    ap.add_argument(
+        "--out",
+        type=Path,
+        default=Path.cwd(),
+        help="каталог для графиков (по умолчанию текущий)",
+    )
     args = ap.parse_args()
 
     data_dir = find_data_dir(args.data)

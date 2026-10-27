@@ -60,29 +60,54 @@ CALLS = {"fib_naive": 0, "fib_memo": 0}  # счётчики рекурсивны
 
 
 def factorial(n: int) -> int:
-    """Факториал n >= 0 рекурсивно. Ожидаемая сложность: TODO (обосновать в отчёте)."""
-    # TODO: базовое условие + рекурсивный переход
-    raise NotImplementedError
+    """Факториал n >= 0 рекурсивно.
+
+    Сложность: T(n) = T(n - 1) + O(1) => O(n) по времени и O(n) по глубине
+    стека вызовов (память).
+    """
+    if n < 0:
+        raise ValueError("factorial: n должно быть неотрицательным")
+    if n == 0:  # базовое условие: 0! = 1
+        return 1
+    return n * factorial(n - 1)
 
 
 def fib_naive(n: int) -> int:
     """n-е число Фибоначчи наивной рекурсией; увеличивает CALLS["fib_naive"].
 
-    Ожидаемая сложность: TODO (экспоненциальная — показать счётчиком вызовов).
+    Сложность: T(n) = T(n - 1) + T(n - 2) + O(1) => O(phi**n), где
+    phi = (1 + sqrt(5)) / 2: дерево вызовов растёт экспоненциально, потому что
+    одни и те же подзадачи пересчитываются заново. Число вызовов
+    C(n) = 2 * F(n + 1) - 1 (проверяется в отчёте).
     """
+    if n < 0:
+        raise ValueError("fib_naive: n должно быть неотрицательным")
     CALLS["fib_naive"] += 1
-    # TODO: F(0)=0, F(1)=1, далее F(n)=F(n-1)+F(n-2)
-    raise NotImplementedError
+    if n < 2:  # F(0) = 0, F(1) = 1
+        return n
+    return fib_naive(n - 1) + fib_naive(n - 2)
 
 
 def fib_memo(n: int, memo: dict[int, int] | None = None) -> int:
     """n-е число Фибоначчи с мемоизацией; увеличивает CALLS["fib_memo"].
 
-    Ожидаемая сложность: TODO (линейная — сравнить счётчики в отчёте).
+    Сложность: O(n) по времени — каждая подзадача 0..n вычисляется один раз,
+    и O(n) по памяти (словарь memo + стек глубины n). Число вызовов при n >= 2
+    равно 2n - 1: на каждом уровне один вызов считает новое значение, второй
+    попадает в memo.
     """
+    if n < 0:
+        raise ValueError("fib_memo: n должно быть неотрицательным")
     CALLS["fib_memo"] += 1
-    # TODO: словарь memo передаётся по рекурсии; повторные подзадачи не пересчитываются
-    raise NotImplementedError
+    if memo is None:
+        memo = {}
+    if n in memo:  # повторная подзадача берётся из кэша
+        return memo[n]
+    if n < 2:
+        return n
+    result = fib_memo(n - 1, memo) + fib_memo(n - 2, memo)
+    memo[n] = result
+    return result
 
 
 def hanoi(n: int, src: str = "A", dst: str = "C", aux: str = "B",
@@ -93,10 +118,18 @@ def hanoi(n: int, src: str = "A", dst: str = "C", aux: str = "B",
     в него парой (откуда, куда). self_check проигрывает эти ходы и проверяет,
     что больший диск ни разу не кладётся на меньший, все диски оказываются
     на dst, а число перемещений равно 2**n - 1.
+
+    Сложность: T(n) = 2 * T(n - 1) + O(1) => T(n) = 2**n - 1 перемещений,
+    то есть O(2**n) по времени и O(n) по глубине рекурсии.
     """
-    # TODO: базовое условие n == 0; иначе перенести n-1 на aux, 1 на dst, n-1 на dst
-    # (moves передаётся во все рекурсивные вызовы)
-    raise NotImplementedError
+    if n == 0:  # переносить нечего
+        return 0
+    count = hanoi(n - 1, src, aux, dst, moves)  # n-1 диск на промежуточный
+    if moves is not None:
+        moves.append((src, dst))  # самый большой диск — на целевой
+    count += 1
+    count += hanoi(n - 1, aux, dst, src, moves)  # n-1 диск с промежуточного на целевой
+    return count
 
 
 # ---------------------------------------------------------------------------
@@ -129,40 +162,52 @@ class DynamicArray:
 
     def _grow(self) -> None:
         """Увеличить ёмкость в 2 раза и скопировать элементы в новый буфер."""
-        # TODO: выделить новый буфер размера 2 * capacity, перенести _size элементов,
-        # увеличить self.copies на число перенесённых элементов
-        raise NotImplementedError
+        new_capacity = 2 * self._capacity
+        new_buffer: list = [None] * new_capacity
+        for i in range(self._size):
+            new_buffer[i] = self._buffer[i]
+        self.copies += self._size
+        self._buffer = new_buffer
+        self._capacity = new_capacity
 
     def append(self, value) -> None:
         """Добавить элемент в конец; при size == capacity сначала вызвать _grow.
 
-        Амортизированная сложность: TODO (обосновать методом учёта в отчёте).
+        Амортизированная сложность: O(1). Худший случай отдельной операции —
+        O(n) из-за копирования при росте, но рост происходит всё реже, поэтому
+        суммарно n добавлений стоят O(n) (метод учёта — в отчёте).
         """
-        # TODO: рост при необходимости, запись в ячейку _buffer[_size], инкремент _size
-        raise NotImplementedError
+        if self._size == self._capacity:  # буфер заполнен — расширяем вдвое
+            self._grow()
+        self._buffer[self._size] = value
+        self._size += 1
 
     def pop(self):
         """Удалить и вернуть последний элемент; для пустого массива — IndexError.
 
-        Сжатие буфера необязательно. Если реализуете его, уменьшайте ёмкость
-        вдвое, когда size опускается до capacity // 4, и не ниже
-        INITIAL_CAPACITY (перенесённые элементы тоже учитываются в copies):
-        сжатие уже при заполнении на ½ даёт Θ(n) на операцию, если чередовать
-        append и pop на границе ёмкости.
+        Сжатие буфера не реализовано: оно не требуется заданием и без него
+        ёмкость не может «дрожать» на границе, давая Θ(n) на операцию.
         """
-        # TODO: проверка на пустоту, чтение _buffer[_size - 1], очистка ячейки
-        # (None — чтобы буфер не удерживал объект), декремент _size
-        raise NotImplementedError
+        if self._size == 0:
+            raise IndexError("pop из пустого DynamicArray")
+        self._size -= 1
+        value = self._buffer[self._size]
+        self._buffer[self._size] = None  # не удерживаем объект в «сырой» памяти
+        return value
 
     def get(self, index: int):
         """Вернуть элемент по индексу 0 <= index < size; иначе IndexError."""
-        # TODO: проверка границ (включая отрицательные индексы) + чтение из буфера
-        raise NotImplementedError
+        if not 0 <= index < self._size:
+            raise IndexError(
+                f"индекс {index} вне диапазона [0, {self._size})")
+        return self._buffer[index]
 
     def set(self, index: int, value) -> None:
         """Записать элемент по индексу 0 <= index < size; иначе IndexError."""
-        # TODO: проверка границ + запись в буфер
-        raise NotImplementedError
+        if not 0 <= index < self._size:
+            raise IndexError(
+                f"индекс {index} вне диапазона [0, {self._size})")
+        self._buffer[index] = value
 
 
 # ---------------------------------------------------------------------------
@@ -180,20 +225,18 @@ class Stack:
         return len(self._data)
 
     def push(self, value) -> None:
-        """Положить элемент на вершину. Амортизированная сложность: TODO."""
-        # TODO: делегировать DynamicArray.append
-        raise NotImplementedError
+        """Положить элемент на вершину. Амортизированная сложность: O(1)."""
+        self._data.append(value)
 
     def pop(self):
         """Снять элемент с вершины; для пустого стека — IndexError."""
-        # TODO: делегировать DynamicArray.pop
-        raise NotImplementedError
+        return self._data.pop()
 
     def peek(self):
         """Вернуть вершину без удаления; для пустого стека — IndexError."""
-        # TODO: для пустого стека — IndexError с понятным сообщением,
-        # иначе DynamicArray.get(len - 1)
-        raise NotImplementedError
+        if len(self._data) == 0:
+            raise IndexError("peek из пустого стека")
+        return self._data.get(len(self._data) - 1)
 
 
 class _Node:
@@ -223,24 +266,52 @@ class Deque:
         return self._size
 
     def push_front(self, value) -> None:
-        """Добавить элемент в начало. Сложность: TODO."""
-        # TODO: создать узел, перевязать ссылки head (учесть пустой дек)
-        raise NotImplementedError
+        """Добавить элемент в начало. Сложность: O(1) (без амортизации)."""
+        node = _Node(value, prev=None, next=self._head)
+        if self._head is None:  # дек был пуст — новый узел и голова, и хвост
+            self._tail = node
+        else:
+            self._head.prev = node
+        self._head = node
+        self._size += 1
 
     def push_back(self, value) -> None:
-        """Добавить элемент в конец. Сложность: TODO."""
-        # TODO: симметрично push_front для tail
-        raise NotImplementedError
+        """Добавить элемент в конец. Сложность: O(1) (без амортизации)."""
+        node = _Node(value, prev=self._tail, next=None)
+        if self._tail is None:  # дек был пуст — новый узел и хвост, и голова
+            self._head = node
+        else:
+            self._tail.next = node
+        self._tail = node
+        self._size += 1
 
     def pop_front(self):
         """Извлечь элемент из начала; для пустого дека — IndexError."""
-        # TODO: учесть переход к пустому деку (tail тоже обнуляется)
-        raise NotImplementedError
+        if self._head is None:
+            raise IndexError("pop_front из пустого дека")
+        node = self._head
+        self._head = node.next
+        if self._head is None:  # дек опустел — обнуляем и хвост
+            self._tail = None
+        else:
+            self._head.prev = None
+        node.next = None  # отцепляем узел от списка
+        self._size -= 1
+        return node.value
 
     def pop_back(self):
         """Извлечь элемент из конца; для пустого дека — IndexError."""
-        # TODO: симметрично pop_front (при опустошении обнуляется и head)
-        raise NotImplementedError
+        if self._tail is None:
+            raise IndexError("pop_back из пустого дека")
+        node = self._tail
+        self._tail = node.prev
+        if self._tail is None:  # дек опустел — обнуляем и голову
+            self._head = None
+        else:
+            self._tail.next = None
+        node.prev = None  # отцепляем узел от списка
+        self._size -= 1
+        return node.value
 
 
 # ---------------------------------------------------------------------------
@@ -575,6 +646,102 @@ def check_deque() -> None:
                            "Deque против collections.deque, случайная серия")
 
 
+def check_own_invariants() -> None:
+    """Собственные проверки инвариантов (шаг 1 методики верификации).
+
+    Дополняют готовые разделы self_check:
+    * DynamicArray: буфер имеет длину ровно capacity, ячейки за size пусты,
+      capacity — степень двойки, copies совпадает с формулой роста x2;
+    * Stack: после серии push через границу роста ёмкость и копирования
+      соответствуют DynamicArray;
+    * Deque: двусвязность списка (node.prev/node.next), согласованность
+      head/tail/size, обнуление обоих концов при опустошении.
+    """
+    # --- DynamicArray: внутреннее состояние буфера и счётчик копирований ---
+    arr, ref = DynamicArray(), []
+    for i in range(300):
+        arr.append(i)
+        ref.append(i)
+        expect(len(arr._buffer) == arr.capacity,
+               f"длина буфера {len(arr._buffer)} != capacity {arr.capacity}")
+        expect(len(ref) <= arr.capacity,
+               f"инвариант size <= capacity нарушен: {len(ref)} > {arr.capacity}")
+        expect(arr.capacity & (arr.capacity - 1) == 0,
+               f"capacity = {arr.capacity} — не степень двойки (рост должен быть x2)")
+        expect(arr.capacity == expected_capacity(len(ref)),
+               f"после {len(ref)} append: capacity = {arr.capacity}, "
+               f"ожидалось {expected_capacity(len(ref))}")
+        expect(arr.copies == expected_copies(len(ref)),
+               f"после {len(ref)} append: copies = {arr.copies}, "
+               f"ожидалось {expected_copies(len(ref))}")
+        expect(all(cell is None for cell in arr._buffer[len(ref):]),
+               f"после {len(ref)} append в ячейках за size остались значения")
+
+    # Смешанные append/pop: элементы не теряются и не дублируются.
+    rng = random.Random(54)
+    arr, ref = DynamicArray(), []
+    for _ in range(5_000):
+        if not ref or rng.random() < 0.6:
+            value = rng.randrange(1_000)
+            arr.append(value)
+            ref.append(value)
+        else:
+            expected = ref.pop()
+            got = arr.pop()
+            expect(got == expected, f"pop() = {got!r}, ожидалось {expected!r}")
+        expect(len(arr) == len(ref), f"len = {len(arr)}, ожидалось {len(ref)}")
+        expect(len(arr) <= arr.capacity, f"size = {len(arr)} > capacity = {arr.capacity}")
+    for i, value in enumerate(ref):
+        expect(arr.get(i) == value, f"get({i}) = {arr.get(i)!r}, ожидалось {value!r}")
+    while ref:
+        expect(arr.pop() == ref.pop(), "pop() вернул не тот элемент")
+    expect(all(cell is None for cell in arr._buffer),
+           "после полного опустошения буфер удерживает значения")
+
+    # --- Stack: граница роста ёмкости и LIFO после неё ---
+    st = Stack()
+    for i in range(300):
+        st.push(i)
+    expect(st._data.capacity == expected_capacity(300) and st._data.copies == expected_copies(300),
+           "Stack: capacity/copies не совпадают с ростом DynamicArray x2")
+    for expected in reversed(range(300)):
+        expect(st.pop() == expected, f"Stack: ожидался {expected} (LIFO)")
+
+    # --- Deque: двусвязность и согласованность концов ---
+    dq, ref_dq = Deque(), collections.deque()
+    ops = random_ops(rng, ("push_front", "push_back"),
+                     ("pop_front", "pop_back"), count=5_000, max_size=50)
+    compare_with_reference(ops, deque_methods(dq), std_deque_methods(ref_dq),
+                           "Deque, собственные инварианты")
+
+    values, prev, node = [], None, dq._head
+    while node is not None:
+        expect(node.prev is prev, "Deque: нарушена обратная ссылка prev")
+        values.append(node.value)
+        prev, node = node, node.next
+    expect(prev is dq._tail, "Deque: последний узел не совпадает с tail")
+    expect(dq._tail is None or dq._tail.next is None, "Deque: tail.next должен быть None")
+    expect(dq._head is None or dq._head.prev is None, "Deque: head.prev должен быть None")
+    expect(len(values) == len(dq), f"Deque: узлов {len(values)}, size = {len(dq)}")
+    expect(values == list(ref_dq), "Deque: обход head -> tail не совпал с эталоном")
+
+    backward, nxt, node = [], None, dq._tail
+    while node is not None:
+        expect(node.next is nxt, "Deque: нарушена прямая ссылка next")
+        backward.append(node.value)
+        nxt, node = node, node.prev
+    expect(backward == list(reversed(ref_dq)),
+           "Deque: обход tail -> head не совпал с эталоном")
+
+    while ref_dq:  # опустошаем с обоих концов, чередуя стороны
+        if rng.random() < 0.5:
+            expect(dq.pop_front() == ref_dq.popleft(), "Deque: pop_front при опустошении")
+        else:
+            expect(dq.pop_back() == ref_dq.pop(), "Deque: pop_back при опустошении")
+    expect(dq._head is None and dq._tail is None and len(dq) == 0,
+           "Deque: после опустошения head/tail/size не обнулены")
+
+
 def check_variant_ops(stack_ops: list[Op], deque_ops: list[Op]) -> None:
     """Операции варианта: свой стек против list, свой дек против collections.deque."""
     compare_with_reference(stack_ops, stack_methods(Stack()), list_stack_methods([]),
@@ -590,6 +757,7 @@ def self_check(stack_ops: list[Op], deque_ops: list[Op]) -> None:
         ("DynamicArray", check_dynamic_array),
         ("Stack", check_stack),
         ("Deque", check_deque),
+        ("собственные инварианты", check_own_invariants),
         ("операции варианта", lambda: check_variant_ops(stack_ops, deque_ops)),
     )
     failed = 0
@@ -610,7 +778,7 @@ def self_check(stack_ops: list[Op], deque_ops: list[Op]) -> None:
             failed += 1
         else:
             print(f"  {name}: OK")
-    # TODO: добавить собственные проверки инвариантов и описать их в отчёте.
+    # Собственные проверки инвариантов — в check_own_invariants выше.
     if failed:
         raise SystemExit(f"self_check: не пройдено разделов — {failed}; "
                          f"замеры выполняются только после всех проверок.")
@@ -707,7 +875,9 @@ def run_benchmarks(append_sizes: list[int], stack_ops: list[Op],
         fib_memo(n)
         print(f"  n={n:>2}  F(n)={value:>6}  fib_naive: {CALLS['fib_naive']:>7} вызовов"
               f"  fib_memo: {CALLS['fib_memo']:>2} вызовов")
-    # TODO: вывести в отчёте формулы числа вызовов обеих функций и сверить с таблицей.
+    # Формулы: у наивной рекурсии C(n) = 2*F(n+1) - 1 (каждый вызов — узел
+    # дерева), у мемоизации C(n) = 2n - 1 при n >= 2 (вторая ветка — попадание
+    # в memo). Таблица в отчёте сверяет обе формулы со счётчиками.
 
     print("\nСерии append на размерах варианта:")
     results["append"] = []
@@ -720,8 +890,11 @@ def run_benchmarks(append_sizes: list[int], stack_ops: list[Op],
         results["append"].append((n, t_own, t_list, cost))
         print(f"  n={n:>7}  t/n: DynamicArray {t_own:.2e} c, list {t_list:.2e} c"
               f"  копирований {arr.copies:>7}  (n + копирования)/n = {cost:.3f}")
-    # TODO: объяснить методом учёта, почему (n + копирования)/n < 3 и почему
-    # у соседних размеров 2**k и 2**k + 1 эта величина различается почти на 1.
+    # Метод учёта: положим на каждый append 3 кредита (1 — запись, 2 — запас
+    # на будущее копирование). При росте capacity = 2**k копируется 2**k
+    # элементов, а накоплено 2 * 2**k кредитов, то есть хватает с запасом.
+    # Поэтому (n + copies)/n < 3; сразу после роста (n = 2**k + 1) отношение
+    # близко к 3, а ровно перед ним (n = 2**k) — к 2: разница почти 1.
 
     for key, title in FRONT_TITLES.items():
         print(f"\n{title}: время одной операции при размере n = "
@@ -748,8 +921,10 @@ def run_benchmarks(append_sizes: list[int], stack_ops: list[Op],
         t_ref = bench(lambda: replay(ops, make_ref())) / len(ops)
         print(f"  {name}: {own_label} {t_own:.2e} c, {ref_label} {t_ref:.2e} c"
               f" — в {t_own / t_ref:.1f} раза медленнее")
-    # TODO: объяснить, откуда постоянный множитель между своими и стандартными
-    # структурами, если асимптотика операций одинакова.
+    # Постоянный множитель объясняется накладными расходами Python-уровня:
+    # у DynamicArray каждый append — вызов метода, проверка size == capacity и
+    # запись по индексу; у Deque каждое добавление/удаление — создание объекта
+    # _Node и перепривязка ссылок. Асимптотика та же, но константа больше.
     return results
 
 
@@ -810,8 +985,8 @@ def plot_results(results: dict, out_dir: Path) -> None:
     fig2.savefig(front_path, dpi=150)
 
     print(f"\nГрафики сохранены:\n  {append_path}\n  {front_path}")
-    # TODO: в отчёте объяснить, почему у list.insert(0, x) и list.pop(0) наклон
-    # около 1, а у операций на концах deque и своего Deque — около 0.
+    # list.insert(0, x) и list.pop(0) сдвигают весь массив: наклон ≈ 1 (O(n)).
+    # deque и свой Deque меняют только концы: наклон ≈ 0 (O(1)).
 
 
 # ---------------------------------------------------------------------------
